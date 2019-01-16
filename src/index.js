@@ -6,15 +6,34 @@ const cron = require("node-cron");
 const express = require("express");
 
 const app = express();
+var port = 8081;
+app.listen(port, function() {
+    console.log("app listening on port " + port);
+})
 
 const router = express.Router();
 
 router.route("/fare-estimates")
     .get(function(request, response, next) {
         const fareEstimateController = new FareEstimateController()
+        fareEstimateController.find(request.query)
+            .then(function(fareEstimates) {
+                console.log("fareEstimates", fareEstimates);
+                return response.json(fareEstimates)
+            })
+            .catch(next)
     });
 
 app.use("/api/v0", router)
+app.use(function(request, response, next) {
+    const error = new Error("Not Found");
+    error.status = 404;
+    return next(error);
+})
+app.use(function(error, request, response, next) {
+    console.error(error);
+    return response.status(error.status || 500).json({name: error.name, message: error.message})
+})
 
 
 class UberFareEstimateAPIController {

@@ -3,12 +3,18 @@ import FareEstimate from "../models/fare-estimate";
 class FareEstimateController {
 
     insert(data) {
-        console.log("insrt", data);
+        console.log("insert", data);
         if (Array.isArray(data)) {
             return FareEstimate.bulkCreate(data);
         }
         return FareEstimate.create(data);
         
+    }
+
+    find(query, options) {
+        const finishedQuery = Object.assign({}, {where: query}, options);
+        console.log("finishedQuery", finishedQuery);
+        return FareEstimate.findAll(finishedQuery);
     }
 
 }
