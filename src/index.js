@@ -1,9 +1,12 @@
 import FareEstimateController from "./controllers/fare-estimate";
 
-const rp = require("request-promise");
-const moment = require("moment");
+const _ = require("lodash");
 const cron = require("node-cron");
 const express = require("express");
+const handlebars = require("handlebars");
+const fs = require("fs");
+const moment = require("moment");
+const rp = require("request-promise");
 
 const app = express();
 var port = 8081;
@@ -25,6 +28,26 @@ router.route("/fare-estimates")
     });
 
 app.use("/api/v0", router)
+app.use("/line-chart", function(request, response, next) {
+
+    const fareEstimateController = new FareEstimateController()
+    fareEstimateController.find(request.query)
+        .then(function(fareEstimates) {
+            console.log("fareEstimates", fareEstimates);
+            fareEstimates = fareEstimates.map(function(estimate) {
+                return {
+                    date: estimate.time,
+                    value: estimate.value
+                };
+            })
+            var filePath = __dirname + "/views/line_chart.hbs";
+            const fileData = fs.readFileSync(filePath, "utf-8");
+            var fareEstimates = JSON.stringify(fareEstimates);
+            var html = handlebars.compile(fileData)({data: fareEstimates});
+            return response.send(html);
+        })
+        .catch(next)
+})
 app.use(function(request, response, next) {
     const error = new Error("Not Found");
     error.status = 404;
