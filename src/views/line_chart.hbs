@@ -7,8 +7,17 @@
 <body>
 
 <svg></svg>
+<div class="last-updated">
+    <span>Last updated: </span>
+    <span id="last-update"></span>
+</div>
 
 <script>
+
+var lastUpdate = document.getElementById("last-update")
+var lastUpdateTime = moment("{{lastUpdateTime}}");
+lastUpdate.innerHTML = moment.duration(moment() - lastUpdateTime).humanize() + " ago";
+
 
 var data = {{{data}}}.map(function(d) {d.date = moment(d.date);return d;});
 //console.log("data", data);
