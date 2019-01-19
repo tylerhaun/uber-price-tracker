@@ -5,12 +5,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.23.0/moment.min.js"></script>
 </head>
 <body>
-
-<svg></svg>
+    <header><h1>Uber Price Tracker</h1></header>
+<main>
+<content>
+<svg id="line-chart-svg"></svg>
 <div class="last-updated">
     <span>Last updated: </span>
     <span id="last-update"></span>
 </div>
+</content>
+</main>
 
 <script>
 
@@ -22,7 +26,7 @@ lastUpdate.innerHTML = moment.duration(moment() - lastUpdateTime).humanize() + "
 var data = {{{data}}}.map(function(d) {d.date = moment(d.date);return d;});
 //console.log("data", data);
 
-var svgWidth = 600, svgHeight = 400;
+var svgWidth = 800, svgHeight = 500;
 var margin = { top: 20, right: 20, bottom: 30, left: 50 };
 var width = svgWidth - margin.left - margin.right;
 var height = svgHeight - margin.top - margin.bottom;
@@ -37,12 +41,15 @@ var g = svg.append("g")
 
 var x = d3.scaleTime().rangeRound([0, width]);
 var y = d3.scaleLinear().rangeRound([height, 0]);
+console.log("x", x);
+console.log("y", y);
 
 var line = d3.line()
     .x(function(d) { return x(d.date)})
     .y(function(d) { return y(d.value)})
-    x.domain(d3.extent(data, function(d) { return d.date }));
-    y.domain(d3.extent(data, function(d) { return d.value }));
+
+x.domain(d3.extent(data, function(d) { return d.date }));
+y.domain(d3.extent(data, function(d) { return d.value }));
 
 g.append("g")
     .attr("transform", "translate(0," + height + ")")
@@ -60,18 +67,144 @@ g.append("g")
     .attr("text-anchor", "end")
     .text("Price ($)");
 
-g.append("path")
+g
+    .append("g")
+    .attr("id", "line-chart-path-g")
+    .attr("height", height)
+    .attr("width", width)
+    .append("path")
     .datum(data)
+    .attr("id", "line-chart-path")
     .attr("fill", "none")
     .attr("stroke", "steelblue")
     .attr("stroke-linejoin", "round")
     .attr("stroke-linecap", "round")
     .attr("stroke-width", 1.5)
     .attr("d", line);
+
+    var points = document
+        .getElementById("line-chart-path")
+        .getAttribute("d")
+        .split(/(?=[LCM])/)
+        .filter(s => s.charAt(0) == "L")
+        .map(s => {
+            var psa = s.slice(1).split(",");
+            return {x: psa[0], y: psa[1]};
+        })
+
+
+
+// Get point in global SVG space
+function cursorPoint(evt){
+}
+
+var pointsHash = points.reduce(function(result, point) {
+    result[point.x] = point.y;
+    return result;
+}, {})
+console.log("pointsHash", pointsHash);
+
+var textY = height - 100;
+var textContainerWidth = 250;
+var textContainer = g.append("rect")
+    .attr("x", 0)
+    .attr("y", textY - 30)
+    .attr("width", textContainerWidth)
+    .attr("height", 50)
+    .attr("fill", "white")
+    .attr("stroke", "black")
+var text = g.append("text")
+    .attr("x", 0)
+    .attr("y", textY)
+    .text("Test")
+//var hReticle = g.append("line").attr("x1", 0).attr("y1", 0).attr("x2", width).attr("y2", 0).attr("stroke", "black")
+var vReticle = g.append("line")
+    .attr("x1", 0)
+    .attr("y1", 0)
+    .attr("x2", 0)
+    .attr("y2", height)
+    .attr("stroke", "black")
+    .attr("stroke-dasharray", "2")
+
+var reticleCircle = g.append("circle")
+    .attr("cx", 0)
+    .attr("cy", 0)
+    .attr("r", 5)
+    .attr("stroke", "black")
+    .attr("fill", "black")
+
+function getPriceAtDate(date) {
+    var distances = data.map(function(d) {
+        var ret = Object.assign({}, d, {
+            distance: Math.abs(d.date - date)
+        });
+        //console.log("ret", ret);
+        return ret;
+    })
+    var nearest = distances.reduce(function(result, distancePoint) {
+        //console.log("find minumum", result)
+        if (distancePoint.distance < result.distance) {
+            return distancePoint;
+        }
+        return result;
+    }, {distance: Infinity})
+    //console.log(distances);
+    //console.log(distances[0].date, distances[0]);
+
+    return nearest.value;
+
+}
+
+var reticleG = g.append("g")
+var mouseListenerElement = document.getElementById("line-chart-svg");
+mouseListenerElement.addEventListener("mousemove", function(event) {
+    console.log("mousemove", event);
+    var pt = mouseListenerElement.createSVGPoint();
+    pt.x = event.clientX;
+    pt.y = event.clientY;
+    var loc = pt.matrixTransform(mouseListenerElement.getScreenCTM().inverse());
+    loc.x -= margin.left;
+    loc.y -= margin.top;
+    var yCoordinate = loc;
+    //console.log("yCoordinate", yCoordinate);
+    //console.log(x.invert(loc.x));
+    //console.log(y.invert(loc.y));
+    vReticle.attr("x1", loc.x).attr("x2", loc.x)
+
+    var date = moment(x.invert(loc.x));
+    var priceAtDate = getPriceAtDate(date);
+        
+    textContainer.attr("x", loc.x - textContainerWidth / 2)
+    text.attr("x", loc.x - 115).text("$" + priceAtDate + " " + date.format("llll"));
+    reticleCircle.attr("cx", loc.x).attr("cy", y(priceAtDate))
+    //svg.selectAll("circle.reticle")
+})
+
 </script>
 
 
-
+<style>
+body {
+    margin: 0px;
+}
+main {
+    padding: 40px 50px 500px;
+    display: grid;
+}
+content {
+    margin: auto;
+}
+header {
+    height: 60px;
+    line-height: 60px;
+    background-color: black;
+    color: white;
+        padding: 0px 20px;
+}
+header h1 {
+    margin: 0px;
+}
+</style>
 </body>
 </html>
 
