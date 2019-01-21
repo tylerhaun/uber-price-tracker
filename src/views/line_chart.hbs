@@ -35,9 +35,9 @@ var svg = d3.select('svg')
 .attr("height", svgHeight);
 
 var g = svg.append("g")
-.attr("transform", 
-        "translate(" + margin.left + "," + margin.top + ")"
-     );
+    .attr("transform", 
+            "translate(" + margin.left + "," + margin.top + ")"
+         );
 
 var x = d3.scaleTime().rangeRound([0, width]);
 var y = d3.scaleLinear().rangeRound([height, 0]);
@@ -95,14 +95,29 @@ g
 
 
 // Get point in global SVG space
-function cursorPoint(evt){
-}
+//function cursorPoint(evt){
+//}
 
-var pointsHash = points.reduce(function(result, point) {
-    result[point.x] = point.y;
-    return result;
-}, {})
-console.log("pointsHash", pointsHash);
+//var pointsHash = points.reduce(function(result, point) {
+//    result[point.x] = point.y;
+//    return result;
+//}, {})
+//console.log("pointsHash", pointsHash);
+
+var vReticle = g.append("line")
+    .attr("x1", 0)
+    .attr("y1", 0)
+    .attr("x2", 0)
+    .attr("y2", height)
+    .attr("stroke", "black")
+    .attr("stroke-dasharray", "2")
+
+var reticleCircle = g.append("circle")
+    .attr("cx", 0)
+    .attr("cy", 0)
+    .attr("r", 5)
+    .attr("stroke", "black")
+    .attr("fill", "black")
 
 var textY = height - 100;
 var textContainerWidth = 250;
@@ -118,20 +133,6 @@ var text = g.append("text")
     .attr("y", textY)
     .text("Test")
 //var hReticle = g.append("line").attr("x1", 0).attr("y1", 0).attr("x2", width).attr("y2", 0).attr("stroke", "black")
-var vReticle = g.append("line")
-    .attr("x1", 0)
-    .attr("y1", 0)
-    .attr("x2", 0)
-    .attr("y2", height)
-    .attr("stroke", "black")
-    .attr("stroke-dasharray", "2")
-
-var reticleCircle = g.append("circle")
-    .attr("cx", 0)
-    .attr("cy", 0)
-    .attr("r", 5)
-    .attr("stroke", "black")
-    .attr("fill", "black")
 
 function getPriceAtDate(date) {
     var distances = data.map(function(d) {
@@ -158,7 +159,7 @@ function getPriceAtDate(date) {
 var reticleG = g.append("g")
 var mouseListenerElement = document.getElementById("line-chart-svg");
 mouseListenerElement.addEventListener("mousemove", function(event) {
-    console.log("mousemove", event);
+    //console.log("mousemove", event);
     var pt = mouseListenerElement.createSVGPoint();
     pt.x = event.clientX;
     pt.y = event.clientY;
