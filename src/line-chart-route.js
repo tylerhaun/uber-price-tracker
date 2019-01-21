@@ -14,6 +14,11 @@ const sequelize = new Sequelize({
 
 function constructQuery(request, count) {
 
+    const sql = sequelize.dialect.QueryGenerator.selectQuery("fare_estimates", {where: request.query || {}});
+    console.log("sql", sql);
+    var innerWhere = new RegExp(/^.*(WHERE.*);$/).exec(sql)[1];
+    console.log("innerWhere", innerWhere);
+
     var numPointsTarget = 512;
     //request.query.downsampleFactor = request.query.downsampleFactor || 1;
     var downsampleFactor = Math.floor(count / numPointsTarget);
@@ -21,7 +26,7 @@ function constructQuery(request, count) {
     downsampleFactor = downsampleFactor || 1;
     //console.log("where", Sequelize.model.where(request.query));
 
-    var innerWhere = "WHERE type='" + request.query.type + "'"
+    //var innerWhere = "WHERE type='" + request.query.type + "'"
     var innerStatement = "SELECT ROW_NUMBER () OVER (ORDER BY time) row_num, * FROM fare_estimates " + innerWhere;
     var outerWhere = " WHERE row_num % " + downsampleFactor + " = 0;"
     var fullStatement = "SELECT * FROM (" + innerStatement + ") " + outerWhere;
