@@ -11,6 +11,12 @@ class FareEstimateController {
         
     }
 
+    count(query, options) {
+        const finishedQuery = Object.assign({}, {where: query}, options);
+        console.log("finishedQuery", finishedQuery);
+        return FareEstimate.count(finishedQuery);
+    }
+
     find(query, options) {
         const finishedQuery = Object.assign({}, {where: query}, options);
         console.log("finishedQuery", finishedQuery);
