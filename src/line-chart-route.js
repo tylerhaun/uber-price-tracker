@@ -37,7 +37,12 @@ function constructQuery(request, count) {
 
 
 module.exports = function(request, response, next) {
-    var query = request.query;
+    console.log("query", request.query);
+    console.log("query keys", Object.keys(request.query));
+    if (Object.keys(request.query).length == 0) {
+        var redirectQuery = "type=Pool&time[$gt]=" + moment().subtract(3, "days").format("YYYY-MM-DD");
+        return response.redirect("/line-chart?" + redirectQuery);
+    }
 
     const fareEstimateController = new FareEstimateController()
     bluebird.resolve()
