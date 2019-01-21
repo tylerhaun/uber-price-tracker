@@ -18,7 +18,6 @@ router.route("/fare-estimates")
         const fareEstimateController = new FareEstimateController()
         fareEstimateController.find(request.query)
             .then(function(fareEstimates) {
-                console.log("fareEstimates", fareEstimates);
                 return response.json(fareEstimates)
             })
             .catch(next)
