@@ -16,12 +16,15 @@
     "handlebars": "^4.0.12",
     "lodash": "^4.17.11",
     "moment": "^2.23.0",
+    "moment-range": "^4.0.1",
     "node-cron": "^2.0.3",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "selenium": "^2.20.0",
     "sequelize": "^4.42.0",
+    "sequelize-cli": "^5.4.0",
     "sqlite": "^3.0.0",
-    "sqlite3": "^4.0.6"
+    "sqlite3": "^4.0.6",
+    "synaptic": "^1.1.4"
   }
 }
