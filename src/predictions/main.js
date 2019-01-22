@@ -147,15 +147,17 @@ function testNetwork() {
 
 function createPredictionData() {
 
-    var range = moment.range(moment(), moment().add(1, "day"));
+    var range = moment.range(moment(), moment().add(3, "days"));
     range = Array.from(range.by("minutes"));
     console.log("range", range);
 
+
     var predictions = range.map(time => {
+        var value = scaleValueInverse(myPerceptron.activate(timeToInputs(time)))
         return {
             type: "Pool",
             time,
-            value: myPerceptron.activate(timeToInputs(time)),
+            value,
             predicted: true
         }
     })
@@ -169,7 +171,7 @@ function createPredictionData() {
 bluebird.resolve().then(async function() {
 
     const fareEstimateController = new FareEstimateController();
-    const fareEstimates = await fareEstimateController.find({type: "Pool"}, {limit: 100, offset: 1000})
+    const fareEstimates = await fareEstimateController.find({type: "Pool"}, {limit: 2000, offset: 4000})
     console.log("fareEstimates", fareEstimates);
 
     var trainingSet = fareEstimates.map(transformDataToTrainingSet)
@@ -179,8 +181,8 @@ bluebird.resolve().then(async function() {
     console.log("training network...")
     console.time()
     var training = myTrainer.train(trainingSet, {
-        log: 10000,
-        iterations: 200000,
+        log: 1000,
+        iterations: 20000,
         error: 0.001
     });
     console.timeEnd();
