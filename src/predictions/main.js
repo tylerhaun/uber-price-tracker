@@ -1,124 +1,16 @@
 console.clear();
 import FareEstimateController from "../controllers/fare-estimate";
-//import PredictionController from "../controllers/prediction";
+import LinearScaler from "./utils/linear-scaler";
+import PredictionModel from "../models/prediction-model";
+import TimeSeriesNeuralNetwork from "../time-series-neural-network";
 
 const bluebird = require("bluebird");
 const moment = require("moment");
 const synaptic = require("synaptic");
 require("moment-range").extendMoment(moment);
 
-var myPerceptron = new synaptic.Architect.Perceptron(5,20,1);
-console.log("myPerceptron", myPerceptron);
-var myTrainer = new synaptic.Trainer(myPerceptron);
-console.log("myTrainer", myTrainer);
 
-
-//var trainingData = require("./trainingData");
-//var trainingSet = trainingData.map(function(data) {
-//
-//    var inputs = timeToInputs(data.time);
-//
-//    var xMin = 0;
-//    var xMax = 1;
-//
-//    var yMin = 10;
-//    var yMax = 30;
-//
-//    var percent = (data.value - yMin) / (yMax - yMin);
-//    var outputX = percent * (xMax - xMin) + xMin;
-//
-//    return {
-//        input: inputs,
-//        output: [outputX]
-//    };
-//})
-//console.log("trainingSet", trainingSet);
-
-//var trainingSet = [
-//    {
-//        input: [0,0],
-//        output: [0]
-//    },
-//    {
-//        input: [0,1],
-//        output: [1]
-//    },
-//    {
-//        input: [1,0],
-//        output: [1]
-//    },
-//    {
-//        input: [1,1],
-//        output: [0]
-//    },
-//];
-
-
-
-
-
-//var result;
-//result = myPerceptron.activate(moment("2019-02-05"));
-//console.log("result", result);
-//result = myPerceptron.activate([1,0]);
-//console.log("result", result);
-//result = myPerceptron.activate([0,1]);
-//console.log("result", result);
-//result = myPerceptron.activate([1,1]);
-//console.log("result", result);
-
-//console.log(myPerceptron.standalone());
-//console.log(myPerceptron.toJSON());
-
-
-function scaleValue(value) {
-    var xMin = 0;
-    var xMax = 1;
-    var yMin = 18;
-    var yMax = 30;
-    var percent = (value - yMin) / (yMax - yMin);
-    var outputX = percent * (xMax - xMin) + xMin;
-    return outputX;
-}
-function scaleValueInverse(value) {
-    var xMin = 18;
-    var xMax = 30;
-    var yMin = 0;
-    var yMax = 1;
-    var percent = (value - yMin) / (yMax - yMin);
-    var outputX = percent * (xMax - xMin) + xMin;
-    return outputX;
-}
-
-
-function timeToInputs(time) {
-
-    var time = moment(time);
-
-    var inputs = [
-        time.month() / 12,
-        time.date() / 31,
-        time.day() / 7,
-        time.hour() / 24,
-        time.minute() / 60
-    ];
-
-    return inputs;
-
-}
-
-function transformDataToTrainingSet(fareEstimate) {
-
-    var inputs = timeToInputs(fareEstimate.time);
-    var output = scaleValue(fareEstimate.value);
-
-
-    return {
-        input: inputs,
-        output: [output]
-    };
-
-}
+var linearScaler = new LinearScaler([18, 20], [0, 1])
 
 function testNetwork() {
 
@@ -145,28 +37,54 @@ function testNetwork() {
 
 }
 
-function createPredictionData() {
+//function createPredictionData() {
+//
+//    var range = moment.range(moment(), moment().add(3, "days"));
+//    range = Array.from(range.by("minutes"));
+//    console.log("range", range);
+//
+//
+//    var predictions = range.map(time => {
+//        var value = scaleValueInverse(myPerceptron.activate(timeToInputs(time)))
+//        return {
+//            type: "Pool",
+//            time,
+//            value,
+//            predicted: true
+//        }
+//    })
+//
+//    console.log("predictions", predictions);
+//
+//    return predictions;
+//
+//}
 
-    var range = moment.range(moment(), moment().add(3, "days"));
-    range = Array.from(range.by("minutes"));
-    console.log("range", range);
+
+transformTimeToInputs(time) {
+    var time = moment(time);
+    var inputs = [
+        time.month() / 12,
+        time.date() / 31,
+        time.day() / 7,
+        time.hour() / 24,
+        time.minute() / 60
+    ];
+}
 
 
-    var predictions = range.map(time => {
-        var value = scaleValueInverse(myPerceptron.activate(timeToInputs(time)))
-        return {
-            type: "Pool",
-            time,
-            value,
-            predicted: true
-        }
-    })
+transformDataToTrainingSet(fareEstimate) {
 
-    console.log("predictions", predictions);
+    var inputs = timeToInputs(fareEstimate.time);
+    var output = scaleValue(fareEstimate.value);
 
-    return predictions;
+    return {
+        input: inputs,
+        output: [output]
+    };
 
 }
+
 
 bluebird.resolve().then(async function() {
 
@@ -174,23 +92,49 @@ bluebird.resolve().then(async function() {
     const fareEstimates = await fareEstimateController.find({type: "Pool"}, {limit: 2000, offset: 4000})
     console.log("fareEstimates", fareEstimates);
 
-    var trainingSet = fareEstimates.map(transformDataToTrainingSet)
+    //var trainingSet = fareEstimates.map(transformDataToTrainingSet)
 
-    console.log("trainingSet", trainingSet);
+    //console.log("trainingSet", trainingSet);
 
-    console.log("training network...")
-    console.time()
-    var training = myTrainer.train(trainingSet, {
-        log: 1000,
-        iterations: 20000,
-        error: 0.001
-    });
-    console.timeEnd();
-    console.log("training", training);
+    //console.log("training network...")
+    //console.time()
+    //var training = myTrainer.train(trainingSet, {
+    //    log: 1000,
+    //    iterations: 20000,
+    //    error: 0.001
+    //});
+    //console.timeEnd();
+    //console.log("training", training);
 
-    testNetwork();
+    var timeSeriesNeuralNetwork = new TimeSeriesNeuralNetwork("test");
+    await timeSeriesNeuralNetwork.loadModel();
 
-    var predictions = createPredictionData();
+    timeSeriesNeuralNetwork.train(
+        fareEstimates.map(
+            fareEstimate => Object.assign(
+                {}, 
+                fareEstimate, 
+                {
+                    value: linearScaler.scale(fareEstimate.value)
+                }
+            )
+        )
+    );
+
+
+    var predictions = timeSeriesNeuralNetwork.predictDateRange(moment(), moment().add(3, "days"))
+
+    predictions = predictions.map(prediction => {
+        return {
+            type: "Pool",
+            prediction.time,
+            linearScaler.inverse(prediction.value),
+            predicted: true
+        }
+    })
+    //testNetwork();
+
+    //var predictions = createPredictionData();
     fareEstimateController.insert(predictions);
 
     console.log(myPerceptron.toJSON())

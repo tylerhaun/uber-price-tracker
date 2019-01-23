@@ -5,19 +5,21 @@ class Perceptron extends synaptic.Network {
         super(...arguments);
 
         var inputLayer = new synaptic.Layer(input);
-        var hiddenLayer = new synaptic.Layer(hidden);
+        var hiddenLayer1 = new synaptic.Layer(hidden);
+        var hiddenLayer2 = new synaptic.Layer(hidden);
         var outputLayer = new synaptic.Layer(output);
 
-        inputLayer.project(hiddenLayer);
-        hiddenLayer.project(outputLayer);
+        inputLayer.project(hiddenLayer1);
+        hiddenLayer1.project(hiddenLayer2);
+        hiddenLayer2.project(outputLayer);
 
-        this.input = inputLayer;
-        this.hidden = [hiddenLayer];
-        this.output = outputLayer;
+        //this.input = inputLayer;
+        //this.hidden = [hiddenLayer, hiddenLayer2];
+        //this.output = outputLayer;
 
         this.set({
             input: inputLayer,
-            hidden: [hiddenLayer],
+            hidden: [hiddenLayer2, hiddenLayer2],
             output: outputLayer
         });
 
