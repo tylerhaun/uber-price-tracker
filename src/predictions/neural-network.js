@@ -51,10 +51,7 @@ class NeuralNetwork {
             })
     }
 
-    train(timeSeriesData) {
-
-        var trainingSet = fareEstimates.map(this.transformDataToTrainingSet)
-
+    train(trainingSet, options) {
         console.log("trainingSet", trainingSet);
 
         console.log("training network...")

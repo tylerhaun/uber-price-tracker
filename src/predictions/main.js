@@ -76,7 +76,7 @@ transformTimeToInputs(time) {
 transformDataToTrainingSet(fareEstimate) {
 
     var inputs = timeToInputs(fareEstimate.time);
-    var output = scaleValue(fareEstimate.value);
+    var output = linearScaler.scale(fareEstimate.value);
 
     return {
         input: inputs,
@@ -92,7 +92,7 @@ bluebird.resolve().then(async function() {
     const fareEstimates = await fareEstimateController.find({type: "Pool"}, {limit: 2000, offset: 4000})
     console.log("fareEstimates", fareEstimates);
 
-    //var trainingSet = fareEstimates.map(transformDataToTrainingSet)
+    var trainingSet = fareEstimates.map(transformDataToTrainingSet)
 
     //console.log("trainingSet", trainingSet);
 
@@ -109,17 +109,11 @@ bluebird.resolve().then(async function() {
     var timeSeriesNeuralNetwork = new TimeSeriesNeuralNetwork("test");
     await timeSeriesNeuralNetwork.loadModel();
 
-    timeSeriesNeuralNetwork.train(
-        fareEstimates.map(
-            fareEstimate => Object.assign(
-                {}, 
-                fareEstimate, 
-                {
-                    value: linearScaler.scale(fareEstimate.value)
-                }
-            )
-        )
-    );
+    timeSeriesNeuralNetwork.train(trainingSet, {
+        log: 1000,
+        iterations: 20000,
+        error: 0.001
+    });
 
 
     var predictions = timeSeriesNeuralNetwork.predictDateRange(moment(), moment().add(3, "days"))
