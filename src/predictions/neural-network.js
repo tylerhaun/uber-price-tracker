@@ -1,6 +1,9 @@
-import Perceptron from "./Perceptron";
+import Perceptron from "./perceptron";
+import PredictionModel from "../models/prediction-model";
 
 const synaptic = require("synaptic");
+const moment = require("moment");
+require("moment-range").extendMoment(moment);
 
 
 // gives save and load functions for database
@@ -15,7 +18,8 @@ class NeuralNetwork {
     }
 
     async saveModel() {
-        var modelJson = JSON.parse(this.network.toJSON());
+        console.log("saveModel()");
+        var modelJson = JSON.stringify(this.network.toJSON());
         var modelData = {
             name: this._modelName,
             model_json: modelJson
@@ -23,13 +27,9 @@ class NeuralNetwork {
         return PredictionModel.create(modelData);
     }
 
-    setModel(modelJson) {
+    setModel(network) {
+        console.log("setModel()", network);
 
-        var predictionModelObject = JSON.parse(predictionModel);
-        console.log("predictionModelObject", predictionModelObject);
-
-        var network = synaptic.Network.fromJSON(predictionModelObject);
-        console.log("network", network);
         this.network = network;
 
         this.trainer = new synaptic.Trainer(network);
@@ -39,34 +39,35 @@ class NeuralNetwork {
     }
 
     async loadModel() {
-        return PredictionModel.findOne({name: this._modelName})
-            .then(predictionModel => {
+        console.log("loadModel()");
+        return PredictionModel.findAll({name: this._modelName})
+            .then(predictionModels => {
+                var predictionModel = predictionModels[predictionModels.length - 1];
                 console.log("predictionModel", predictionModel);
                 if (!predictionModel) {
-                    var model = new Perceptron(5, 20, 1);
+                    console.log("No prediction model found.");
+                    console.log("Creating new model...");
+                    var model = new Perceptron(134, 200, 1);
                     return this.setModel(model);
                 }
 
-                return this.setModel(predictionModel.modelJson);
+                return this.setModel(synaptic.Network.fromJSON(JSON.parse(predictionModel.model_json)));
             })
     }
 
     train(trainingSet, options) {
-        console.log("trainingSet", trainingSet);
+        console.log("train()");
 
         console.log("training network...")
         console.time()
-        var training = myTrainer.train(trainingSet, {
-            log: 1000,
-            iterations: 20000,
-            error: 0.001
-        });
+        var training = this.trainer.train(trainingSet, options);
         console.timeEnd();
         console.log("training", training);
         
     }
 
     predictDateRange(startDate, endDate, stepUnits) {
+        console.log("predictDateRange()");
 
         var range = moment.range(startDate, endDate);
         range = Array.from(range.by(stepUnits));
@@ -82,6 +83,12 @@ class NeuralNetwork {
 
         return predictions;
         
+    }
+
+    activate(input) {
+
+        return this.network.activate(input);
+    
     }
 
     //scaleValue(value) {
