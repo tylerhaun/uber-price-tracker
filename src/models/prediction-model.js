@@ -6,10 +6,11 @@ const sequelize = new Sequelize({
 
 
 const Model = sequelize.define("prediction_model", {
-    modelJson: Sequelize.STRING,
+    model_json: Sequelize.STRING,
     name: Sequelize.STRING
 }, {
-    timestamps: true
+    timestamps: true,
+    paranoid: true
 });
 
 sequelize.sync()

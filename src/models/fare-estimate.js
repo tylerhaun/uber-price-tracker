@@ -8,9 +8,14 @@ const sequelize = new Sequelize({
 const FareEstimate = sequelize.define("fare_estimate", {
     type: Sequelize.STRING,
     value: Sequelize.INTEGER,
-    time: Sequelize.DATE
+    time: Sequelize.DATE,
+    predicted: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: null
+    }
 }, {
-    timestamps: true
+    timestamps: true,
+    paranoid: true
 });
 
 sequelize.sync()
