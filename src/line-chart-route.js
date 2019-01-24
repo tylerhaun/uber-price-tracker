@@ -14,7 +14,9 @@ const sequelize = new Sequelize({
 
 function constructQuery(request, count) {
 
-    const sql = sequelize.dialect.QueryGenerator.selectQuery("fare_estimates", {where: request.query || {}});
+    var query = Object.assign({}, request.query || {}, {deletedAt: null})
+    console.log("query", query);
+    const sql = sequelize.dialect.QueryGenerator.selectQuery("fare_estimates", {where: query});
     var innerWhere = new RegExp(/^.*(WHERE.*);$/).exec(sql)[1];
 
     var numPointsTarget = 512;
