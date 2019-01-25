@@ -23,46 +23,85 @@ def transform_time_to_inputs(time):
     inputs += int_to_unary(time.weekday(), [0,6])
     inputs += int_to_unary(time.hour, [0, 23])
     inputs += int_to_unary(time.minute, [0,59])
-    print(inputs)
     return inputs
 
-print(transform_time_to_inputs(datetime.datetime.now()))
+print(len(transform_time_to_inputs(datetime.datetime.now())))
 
 
 def load_estimates():
-    sql = "SELECT * FROM fare_estimates WHERE predicted IS NOT 1 AND deletedAt IS NULL LIMIT 5"
+    sql = "SELECT * FROM fare_estimates WHERE type='Pool' AND predicted IS NOT 1 AND deletedAt IS NULL LIMIT 10000"
     print("executing sql {}".format(sql))
     estimates = connection.execute(sql).fetchall()
     print(estimates[0:3])
     return estimates
 load_estimates()
 
+class LinearScaler:
+    def __init__(self, inputRange, outputRange):
+        self._inputRange = inputRange
+        self._outputRange = outputRange
 
-model = None
-def run_xor():
+    def scale(self, value):
+        xMin = self._outputRange[0];
+        xMax = self._outputRange[1];
+        yMin = self._inputRange[0];
+        yMax = self._inputRange[1];
+        percent = (value - yMin) / (yMax - yMin);
+        outputX = percent * (xMax - xMin) + xMin;
+        return outputX;
+
+    def inverse(self, value):
+        xMin = self._inputRange[0];
+        xMax = self._inputRange[1];
+        yMin = self._outputRange[0];
+        yMax = self._outputRange[1];
+        percent = (value - yMin) / (yMax - yMin);
+        outputX = percent * (xMax - xMin) + xMin;
+        return outputX;
+
+
+def create_date_range(start_date, end_date, step):
+    pass
+
+def train_model():
     from keras.models import Sequential
     from keras.layers.core import Dense, Dropout, Activation
     from keras.optimizers import SGD
 
-    input_X = np.array([[0,0],[0,1],[1,0],[1,1]])
-    output_y = np.array([[0],[1],[1],[0]])
+    scaler = LinearScaler([18,30], [0,1])
 
+    print("loading estimates...")
+    estimates = load_estimates()
+    print("fetched {} estimates".format(len(estimates)))
+    def map_estimates_to_input(estimate):
+        time = estimate[3]
+        inputs = transform_time_to_inputs(parser.parse(time))
+        return inputs
+    inputs = np.array(list(map(map_estimates_to_input, estimates)))
+    def map_estimates_to_output(estimate):
+        scaled = scaler.scale(estimate[2])
+        return scaled
+    outputs = np.array(list(map(map_estimates_to_output, estimates)))
+        
     model = Sequential()
-    model.add(Dense(8, input_dim=2))
+    model.add(Dense(8, input_dim=134))
     model.add(Activation('tanh'))
     model.add(Dense(1))
     model.add(Activation('sigmoid'))
+
+    for i in range(10):
+        print("{}: {}".format(inputs[i], outputs[i]))
 
     stochastic_gradient_descent = SGD(lr=0.1)
     print("compiling model...")
     model.compile(loss='binary_crossentropy', optimizer=stochastic_gradient_descent)
 
     print("fitting model...")
-    model.fit(input_X, output_y, batch_size=1, epochs=100, verbose=0)
-    print(model.predict_proba(input_X))
+    model.fit(inputs, outputs, batch_size=10, epochs=10, verbose=1)
+    print(model.predict_proba(inputs))
     return model
 
-model = run_xor()
+model = train_model()
 
 
 class PredictionModelController:
