@@ -1,11 +1,18 @@
 from dateutil import parser
 import datetime
+import pandas
+import sqlalchemy
 import sqlite3
 import numpy as np 
 import os 
 
+db_path = "database.sqlite"
+connection = sqlite3.connect(db_path)
+engine = sqlalchemy.create_engine("sqlite:///{}".format(db_path))
+print(engine)
 
-connection = sqlite3.connect("database.sqlite");
+df = pandas.read_sql("SELECT * FROM fare_estimates LIMIT 100", engine)
+print(df)
 
 #models = connection.execute("SELECT * FROM prediction_models LIMIT 1;").fetchall()
 #print(models);
@@ -17,24 +24,34 @@ def int_to_unary(int, range):
     return ret
 
 def transform_time_to_inputs(time):
-    inputs = []
-    inputs += int_to_unary(time.month, [1,12])
-    inputs += int_to_unary(time.day, [1,31])
-    inputs += int_to_unary(time.weekday(), [0,6])
-    inputs += int_to_unary(time.hour, [0, 23])
-    inputs += int_to_unary(time.minute, [0,59])
+    #print("transform_time_to_inputs()")
+    inputs = np.concatenate([
+        int_to_unary(time.month, [1,12]),
+        int_to_unary(time.day, [1,31]),
+        int_to_unary(time.weekday(), [0,6]),
+        int_to_unary(time.hour, [0, 23]),
+        int_to_unary(time.minute, [0,59]),
+    ])
     return inputs
 
 print(len(transform_time_to_inputs(datetime.datetime.now())))
 
 
-def load_estimates():
-    sql = "SELECT * FROM fare_estimates WHERE type='Pool' AND predicted IS NOT 1 AND deletedAt IS NULL LIMIT 10000"
+def load_estimates(limit=100):
+    sql = "SELECT * FROM fare_estimates WHERE type='Pool' AND predicted IS NOT 1 AND deletedAt IS NULL LIMIT {limit}".format(limit=limit)
     print("executing sql {}".format(sql))
     estimates = connection.execute(sql).fetchall()
     print(estimates[0:3])
     return estimates
-load_estimates()
+
+def insert(table, columns, data):
+    columns_sql = "({})".format(",".join(columns))
+    #values_sql = "({})".format(",".join(list(map(str, data.values()))))
+    values_sql = "({))".format(",".join("?"))
+    sql = "INSERT INTO {table} {columns} VALUES {values}".format(**{"table": self.table, "columns": columnsi_sql, "values": values_sql})
+    print("executing sql {}".format(sql))
+    #connection.execute(sql, data)
+
 
 class LinearScaler:
     def __init__(self, inputRange, outputRange):
@@ -59,19 +76,53 @@ class LinearScaler:
         outputX = percent * (xMax - xMin) + xMin;
         return outputX;
 
+scaler = LinearScaler([18,30], [0,1])
 
-def create_date_range(start_date, end_date, step):
-    pass
+def create_prediction_data(model):
+    print("create_prediction_data()")
+    now = datetime.datetime.now()
+    date_range = pandas.date_range(now, now + datetime.timedelta(days=5), freq="5min")
+    print("date_range {}".format(date_range))
+    inputs = []
+    for date in date_range:
+        inputs.append(transform_time_to_inputs(date))
+    inputs = np.array(inputs)
+    print("inputs {}".format(inputs))
+    predictions = model.predict(inputs)
+    print("predictions {}".format(predictions))
+    def map_predictions(prediction):
+        ret = {
+            "type": "Pool"
+            "value"
+                
+        }
+
+    fare_estimates = []
+    now = datetime.datetime.now()
+    for i in range(len(date_range)):
+        ts = date_range[i]
+        time = ts.to_pydatetime()
+        time = time.update(tzinfo=pytz.timezone("America/Los_Angeles").localize(now))
+        fare_estimate = {
+            "type": "Pool",
+            "value": scaler.inverse(predictions[i][0],
+            "time": time,
+            "predicted": True
+        }
+
+    for i in range(10):
+        print("{}: {}".format(date_range[i * 100].strftime("%c %p"), scaler.inverse(predictions[i * 100][0])))
+    insert([], predictions
+
 
 def train_model():
     from keras.models import Sequential
     from keras.layers.core import Dense, Dropout, Activation
     from keras.optimizers import SGD
 
-    scaler = LinearScaler([18,30], [0,1])
 
     print("loading estimates...")
-    estimates = load_estimates()
+    estimates = load_estimates(limit=2000)
     print("fetched {} estimates".format(len(estimates)))
     def map_estimates_to_input(estimate):
         time = estimate[3]
@@ -97,8 +148,9 @@ def train_model():
     model.compile(loss='binary_crossentropy', optimizer=stochastic_gradient_descent)
 
     print("fitting model...")
-    model.fit(inputs, outputs, batch_size=10, epochs=10, verbose=1)
-    print(model.predict_proba(inputs))
+    model.fit(inputs, outputs, batch_size=10, epochs=20, verbose=1)
+    #print(model.predict_proba(inputs))
+    create_prediction_data(model)
     return model
 
 model = train_model()
