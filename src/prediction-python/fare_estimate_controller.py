@@ -17,15 +17,20 @@ class FareEstimateController:
         return result.lastrowid
 
     def bulk_insert(self, data, log_progress=0):
+        # TODO fix this.  Way to slow
+        print("FareEstimateController.bulk_insert()")
         inserted_ids = []
         pl = ProgressLogger(total=len(data))
         for d in data:
             pl.iteration()
             sql = self.table.insert().values(d)
-            result = self.engine.execute(sql)
+            result = self.engine.execute(str(sql), **d)
             inserted_ids.append(result.lastrowid)
         pl.stop()
         return inserted_ids
+
+    def _insert(self, data):
+        pass
 
 
     def find(self, query=None, options={}):
@@ -36,7 +41,9 @@ class FareEstimateController:
             
         if "limit" in options.keys():
             statement = statement.limit(options["limit"])
-        result = self.engine.execute(statement)
+        statement = str(statement)
+        print(statement)
+        result = self.engine.execute(statement, options["limit"])
         return result.fetchall()
 
     def update(self, query=None, values={}):
